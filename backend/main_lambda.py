@@ -215,3 +215,216 @@ async def get_stats(user=Depends(get_current_user)):
         raise HTTPException(status_code=403, detail="Admin only")
     return {"total_users": DynamoUser.count_all(),
             "total_documents": DynamoDocument.count_all()}
+
+
+
+# --- AI Analysis (Kimi K3 powered) ---
+import httpx
+
+async def call_kimi(system_prompt: str, user_prompt: str) -> str:
+    """Call Kimi K3 API for AI analysis."""
+    api_key = os.environ.get("KIMI_API_KEY", settings.kimi_api_key)
+    model = os.environ.get("KIMI_MODEL", "kimi-k3")
+    
+    if not api_key:
+        raise ValueError("KIMI_API_KEY not configured")
+    
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json",
+    }
+    payload = {
+        "model": model,
+        "messages": [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt},
+        ],
+        "temperature": 1,
+        "max_tokens": 1000,
+    }
+    async with httpx.AsyncClient(timeout=120.0) as client:
+        response = await client.post(
+            "https://api.moonshot.ai/v1/chat/completions",
+            headers=headers,
+            json=payload,
+        )
+        if response.status_code != 200:
+            logger.error(f"Kimi API error: {response.status_code} - {response.text}")
+        response.raise_for_status()
+        data = response.json()
+    return data["choices"][0]["message"]["content"]
+
+
+class QARequest(BaseModel):
+    document_id: str
+    question: str
+
+
+@app.post("/api/analysis/qa")
+async def ask_question(req: QARequest, user=Depends(get_current_user)):
+    """Ask AI a question about a document."""
+    doc = DynamoDocument.get_by_id(req.document_id)
+    if not doc or doc.get("owner_id") != user["id"]:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    doc_text = doc.get("extracted_text") or doc.get("original_filename", "No content available")
+
+    system_prompt = """You are DocSetu AI, an Indian document intelligence assistant. 
+You analyze documents for Indian businesses - GST invoices, PAN cards, Aadhaar, compliance documents.
+Answer questions clearly and specifically based on the document content provided.
+If you find compliance issues, mention the specific rule (GST Rule 46, DPDP Act Section 6, etc.)."""
+
+    user_prompt = f"""Document: {doc.get('original_filename', 'Unknown')}
+Document Content:
+{doc_text}
+
+User Question: {req.question}
+
+Provide a helpful, detailed answer based on the document."""
+
+    try:
+        answer = await call_kimi(system_prompt, user_prompt)
+        return {"document_id": req.document_id, "question": req.question, "answer": answer, "confidence": 0.85, "model": "kimi-k3"}
+    except Exception as e:
+        logger.error(f"AI Q&A failed: {e}")
+        raise HTTPException(status_code=500, detail=f"AI analysis failed: {str(e)}")
+
+
+@app.post("/api/analysis/extract/{doc_id}")
+async def extract_entities(doc_id: str, user=Depends(get_current_user)):
+    """Extract entities (PAN, GST, Aadhaar, amounts, dates) from document using AI."""
+    doc = DynamoDocument.get_by_id(doc_id)
+    if not doc or doc.get("owner_id") != user["id"]:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    doc_text = doc.get("extracted_text") or doc.get("original_filename", "")
+
+    system_prompt = """You are an entity extraction engine for Indian documents.
+Extract all entities from the document and return them as JSON.
+Extract: GSTIN, PAN, Aadhaar (masked as XXXX-XXXX-1234), company names, dates, amounts (in INR), 
+invoice numbers, HSN/SAC codes, tax percentages, and addresses."""
+
+    user_prompt = f"""Extract all entities from this Indian document:
+
+{doc_text}
+
+Return as JSON with these keys: gstin, pan, aadhaar, company_names, dates, amounts, invoice_numbers, hsn_codes, tax_rates, addresses.
+Each should be a list. If not found, use empty list."""
+
+    try:
+        result = await call_kimi(system_prompt, user_prompt)
+        return {"document_id": doc_id, "entities": result, "status": "completed", "model": "kimi-k3"}
+    except Exception as e:
+        logger.error(f"Entity extraction failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Extraction failed: {str(e)}")
+
+
+@app.post("/api/compliance/check/{doc_id}")
+async def check_compliance(doc_id: str, user=Depends(get_current_user)):
+    """Run AI-powered compliance check on a document."""
+    doc = DynamoDocument.get_by_id(doc_id)
+    if not doc or doc.get("owner_id") != user["id"]:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    doc_text = doc.get("extracted_text") or doc.get("original_filename", "")
+
+    system_prompt = """You are an Indian regulatory compliance checker. Check the document against:
+1. GST Rules (CGST Act Section 31, Rule 46) - Invoice format, GSTIN presence, HSN codes, tax breakdown
+2. DPDP Act 2023 - Data privacy consent, purpose limitation, data principal rights
+3. SEBI Regulations - Disclosure requirements if applicable
+4. RBI Guidelines - KYC compliance if applicable
+5. MCA (Companies Act) - CIN display, registered office if applicable
+
+For each violation found, specify: rule_id, severity (critical/high/medium/low), description, and recommendation."""
+
+    user_prompt = f"""Check this document for Indian regulatory compliance:
+
+Document: {doc.get('original_filename', 'Unknown')}
+Content:
+{doc_text}
+
+Provide a compliance report with:
+1. overall_score (0-100)
+2. overall_status (compliant/needs_attention/non_compliant)
+3. violations (list with rule_id, severity, description, recommendation)
+4. passed_checks (what's correct)
+5. summary (2-3 sentence overview)"""
+
+    try:
+        result = await call_kimi(system_prompt, user_prompt)
+        return {"document_id": doc_id, "report": result, "status": "completed", "model": "kimi-k3",
+                "regulations_checked": ["GST", "DPDP", "SEBI", "RBI", "MCA"]}
+    except Exception as e:
+        logger.error(f"Compliance check failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Compliance check failed: {str(e)}")
+
+
+@app.post("/api/analysis/summarize/{doc_id}")
+async def summarize_document(doc_id: str, user=Depends(get_current_user)):
+    """Generate AI summary of a document."""
+    doc = DynamoDocument.get_by_id(doc_id)
+    if not doc or doc.get("owner_id") != user["id"]:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    doc_text = doc.get("extracted_text") or doc.get("original_filename", "")
+
+    system_prompt = "You are DocSetu AI. Summarize Indian business documents clearly and concisely in 3-5 bullet points."
+    user_prompt = f"Summarize this document:\n\n{doc_text}"
+
+    try:
+        result = await call_kimi(system_prompt, user_prompt)
+        return {"document_id": doc_id, "summary": result, "model": "kimi-k3"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Summarization failed: {str(e)}")
+
+
+# --- Sample Document (for demo) ---
+SAMPLE_INVOICE = """TAX INVOICE
+============================================
+Supplier: Tata Consultancy Services Ltd.
+GSTIN: 27AADCT2727Q1ZY
+Address: TCS House, Ravindra Annexe, Mumbai 400001
+
+Invoice No: TCS/GST/2026/07-001
+Date: 25-Jul-2026
+Place of Supply: Maharashtra (27)
+
+Buyer: Infosys BPM Limited
+Buyer GSTIN: 29AABCI1234F1ZN
+Buyer Address: Electronics City, Bangalore 560100
+
+| Description              | HSN Code | Qty | Rate      | Amount      |
+|--------------------------|----------|-----|-----------|-------------|
+| IT Consulting Services   | 998314   | 1   | 12,00,000 | 12,00,000   |
+| Cloud Infrastructure     | 998315   | 1   | 2,52,340  | 2,52,340    |
+
+Subtotal: Rs. 14,52,340
+IGST @18%: Rs. 2,61,421
+Total: Rs. 17,13,761
+Amount in words: Seventeen Lakh Thirteen Thousand Seven Hundred Sixty One Rupees Only
+
+PAN: AADCT2727Q
+CIN: L22210MH1995PLC084781
+
+Bank Details: HDFC Bank, A/c: 00071450000123, IFSC: HDFC0000007
+Terms: Payment due within 30 days
+
+Authorized Signatory
+TCS Ltd."""
+
+
+@app.post("/api/demo/load-sample")
+async def load_sample_document(user=Depends(get_current_user)):
+    """Load a sample GST invoice for demo/testing purposes."""
+    doc = DynamoDocument.create(
+        filename="TCS_Invoice_Jul2026.pdf",
+        original_filename="TCS_Invoice_Jul2026.pdf",
+        file_path="/tmp/sample.pdf",
+        file_type="pdf",
+        file_size=len(SAMPLE_INVOICE),
+        mime_type="application/pdf",
+        owner_id=user["id"],
+    )
+    # Store the text content
+    DynamoDocument.update(doc["id"], extracted_text=SAMPLE_INVOICE, status="processed")
+    return {"id": doc["id"], "message": "Sample TCS GST invoice loaded! Try /api/analysis/qa, /api/compliance/check, or /api/analysis/extract"}
