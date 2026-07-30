@@ -1,0 +1,688 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  DocSetu AI - Intelligent Document Analysis & Compliance Platform
+  FastAPI backend deployed as Lambda with HTTP API Gateway, DynamoDB, and S3.
+
+# =============================================================================
+# PARAMETERS - Configurable values for different environments
+# =============================================================================
+Parameters:
+  Stage:
+    Type: String
+    Default: dev
+    AllowedValues:
+      - dev
+      - prod
+    Description: Deployment stage (dev or prod)
+
+  ProjectName:
+    Type: String
+    Default: docsetu-ai
+    Description: Project name used for resource naming
+
+  OpenAIKeyParameter:
+    Type: String
+    Default: /docsetu-ai/openai-api-key
+    Description: SSM Parameter path for OpenAI API key
+    NoEcho: true
+
+  JWTSecretParameter:
+    Type: String
+    Default: /docsetu-ai/jwt-secret
+    Description: SSM Parameter path for JWT secret
+    NoEcho: true
+
+# =============================================================================
+# CONDITIONS - Logic for environment-specific resources
+# =============================================================================
+Conditions:
+  IsProd: !Equals [!Ref Stage, prod]
+  IsDev: !Equals [!Ref Stage, dev]
+
+# =============================================================================
+# GLOBALS - Common properties shared across Lambda functions
+# =============================================================================
+Globals:
+  Function:
+    Runtime: python3.11
+    MemorySize: 512
+    Timeout: 30
+    Architectures:
+      - x86_64
+    Environment:
+      Variables:
+        STAGE: !Ref Stage
+        PROJECT_NAME: !Ref ProjectName
+        DOCUMENTS_BUCKET: !Ref DocumentsBucket
+        USERS_TABLE: !Ref UsersTable
+        DOCUMENTS_TABLE: !Ref DocumentsTable
+        ANALYSES_TABLE: !Ref AnalysesTable
+        COMPLIANCE_REPORTS_TABLE: !Ref ComplianceReportsTable
+        OPENAI_KEY_PARAM: !Ref OpenAIKeyParameter
+        JWT_SECRET_PARAM: !Ref JWTSecretParameter
+    Tags:
+      Project: !Ref ProjectName
+      Stage: !Ref Stage
+      ManagedBy: SAM
+
+# =============================================================================
+# RESOURCES
+# =============================================================================
+Resources:
+
+  # ---------------------------------------------------------------------------
+  # API GATEWAY - HTTP API (v2) for lower latency and cost vs REST API
+  # ---------------------------------------------------------------------------
+  DocSetuApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      StageName: !Ref Stage
+      Description: !Sub "${ProjectName} HTTP API - ${Stage}"
+      # CORS configuration for frontend access
+      CorsConfiguration:
+        AllowOrigins:
+          - "*"
+        AllowHeaders:
+          - Content-Type
+          - Authorization
+          - X-Amz-Date
+          - X-Api-Key
+          - X-Amz-Security-Token
+        AllowMethods:
+          - GET
+          - POST
+          - PUT
+          - DELETE
+          - OPTIONS
+        MaxAge: 600
+      # Access logging for debugging and monitoring
+      AccessLogSettings:
+        DestinationArn: !GetAtt ApiAccessLogGroup.Arn
+      Tags:
+        Project: !Ref ProjectName
+        Stage: !Ref Stage
+
+  # ---------------------------------------------------------------------------
+  # LAMBDA FUNCTION - FastAPI app served via Mangum adapter
+  # ---------------------------------------------------------------------------
+  DocSetuFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "${ProjectName}-api-${Stage}"
+      Description: !Sub "DocSetu AI FastAPI backend - ${Stage}"
+      Handler: app.handler.handler
+      CodeUri: ../src/
+      # Lambda Layer for Python dependencies (requests, openai, fastapi, etc.)
+      Layers:
+        - !Ref DependenciesLayer
+      # AutoPublishAlias enables safe deployments with traffic shifting
+      AutoPublishAlias: live
+      # Provisioned concurrency for prod to eliminate cold starts
+      ProvisionedConcurrencyConfig:
+        !If
+          - IsProd
+          - ProvisionedConcurrentExecutions: 5
+          - !Ref AWS::NoValue
+      # Deployment preference for gradual rollouts in prod
+      DeploymentPreference:
+        !If
+          - IsProd
+          - Type: Linear10PercentEvery1Minute
+            Alarms:
+              - !Ref DocSetuFunctionErrorAlarm
+          - !Ref AWS::NoValue
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Events:
+        # Catch-all route - FastAPI handles routing internally
+        ApiCatchAll:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref DocSetuApi
+            Path: /{proxy+}
+            Method: ANY
+        # Root path handler
+        ApiRoot:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref DocSetuApi
+            Path: /
+            Method: ANY
+      Tags:
+        Project: !Ref ProjectName
+        Stage: !Ref Stage
+        ManagedBy: SAM
+
+  # ---------------------------------------------------------------------------
+  # LAMBDA LAYER - Python dependencies packaged separately for faster deploys
+  # ---------------------------------------------------------------------------
+  DependenciesLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: !Sub "${ProjectName}-dependencies-${Stage}"
+      Description: Python dependencies for DocSetu AI (fastapi, mangum, openai, etc.)
+      ContentUri: ../layers/dependencies/
+      CompatibleRuntimes:
+        - python3.11
+      CompatibleArchitectures:
+        - x86_64
+      RetentionPolicy: Retain
+    Metadata:
+      BuildMethod: python3.11
+
+  # ---------------------------------------------------------------------------
+  # IAM ROLE - Least-privilege permissions for Lambda execution
+  # ---------------------------------------------------------------------------
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${ProjectName}-lambda-role-${Stage}"
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        # CloudWatch Logs - write permissions for function logs
+        - PolicyName: !Sub "${ProjectName}-cloudwatch-${Stage}"
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource:
+                  - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${ProjectName}-api-${Stage}:*"
+
+        # S3 - Read/write access to the documents bucket only
+        - PolicyName: !Sub "${ProjectName}-s3-${Stage}"
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                  - s3:DeleteObject
+                  - s3:ListBucket
+                  - s3:GetObjectVersion
+                Resource:
+                  - !GetAtt DocumentsBucket.Arn
+                  - !Sub "${DocumentsBucket.Arn}/*"
+
+        # DynamoDB - CRUD access to all application tables
+        - PolicyName: !Sub "${ProjectName}-dynamodb-${Stage}"
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:PutItem
+                  - dynamodb:UpdateItem
+                  - dynamodb:DeleteItem
+                  - dynamodb:Query
+                  - dynamodb:Scan
+                  - dynamodb:BatchGetItem
+                  - dynamodb:BatchWriteItem
+                Resource:
+                  - !GetAtt UsersTable.Arn
+                  - !Sub "${UsersTable.Arn}/index/*"
+                  - !GetAtt DocumentsTable.Arn
+                  - !Sub "${DocumentsTable.Arn}/index/*"
+                  - !GetAtt AnalysesTable.Arn
+                  - !Sub "${AnalysesTable.Arn}/index/*"
+                  - !GetAtt ComplianceReportsTable.Arn
+                  - !Sub "${ComplianceReportsTable.Arn}/index/*"
+
+        # SSM Parameter Store - Read secrets at runtime
+        - PolicyName: !Sub "${ProjectName}-ssm-${Stage}"
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ssm:GetParameter
+                  - ssm:GetParameters
+                Resource:
+                  - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/docsetu-ai/*"
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: Stage
+          Value: !Ref Stage
+
+  # ---------------------------------------------------------------------------
+  # S3 BUCKET - Document storage for PDFs, images, and processed files
+  # ---------------------------------------------------------------------------
+  DocumentsBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      BucketName: !Sub "${ProjectName}-documents-${Stage}-${AWS::AccountId}"
+      # Encryption at rest using S3-managed keys
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      # Block all public access - documents are private
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      # Versioning for document audit trail
+      VersioningConfiguration:
+        Status: Enabled
+      # Lifecycle rules - transition to IA after 90 days for cost savings
+      LifecycleConfiguration:
+        Rules:
+          - Id: TransitionToIA
+            Status: Enabled
+            Transitions:
+              - StorageClass: STANDARD_IA
+                TransitionInDays: 90
+            # Move to Glacier after 365 days
+            NoncurrentVersionTransition:
+              - StorageClass: GLACIER
+                TransitionInDays: 365
+            # Delete incomplete multipart uploads after 7 days
+            AbortIncompleteMultipartUpload:
+              DaysAfterInitiation: 7
+          - Id: DeleteOldVersions
+            Status: Enabled
+            NoncurrentVersionExpiration:
+              NoncurrentDays: 730
+      # CORS for direct browser uploads (presigned URLs)
+      CorsConfiguration:
+        CorsRules:
+          - AllowedHeaders:
+              - "*"
+            AllowedMethods:
+              - GET
+              - PUT
+              - POST
+            AllowedOrigins:
+              - "*"
+            MaxAge: 3600
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: Stage
+          Value: !Ref Stage
+
+  # ---------------------------------------------------------------------------
+  # DYNAMODB TABLES - On-demand billing for unpredictable workloads
+  # ---------------------------------------------------------------------------
+
+  # Users Table - Stores user profiles and authentication data
+  UsersTable:
+    Type: AWS::DynamoDB::Table
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      TableName: !Sub "${ProjectName}-users-${Stage}"
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: user_id
+          AttributeType: S
+        - AttributeName: email
+          AttributeType: S
+      KeySchema:
+        - AttributeName: user_id
+          KeyType: HASH
+      # GSI for looking up users by email (login flow)
+      GlobalSecondaryIndexes:
+        - IndexName: email-index
+          KeySchema:
+            - AttributeName: email
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+      # Enable point-in-time recovery for data protection
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: !If [IsProd, true, false]
+      # Enable encryption at rest
+      SSESpecification:
+        SSEEnabled: true
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: Stage
+          Value: !Ref Stage
+
+  # Documents Table - Metadata for uploaded documents
+  DocumentsTable:
+    Type: AWS::DynamoDB::Table
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      TableName: !Sub "${ProjectName}-documents-${Stage}"
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: doc_id
+          AttributeType: S
+        - AttributeName: owner_id
+          AttributeType: S
+        - AttributeName: status
+          AttributeType: S
+      KeySchema:
+        - AttributeName: doc_id
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        # GSI for querying documents by owner (user's document list)
+        - IndexName: owner_id-index
+          KeySchema:
+            - AttributeName: owner_id
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+        # GSI for querying documents by processing status
+        - IndexName: status-index
+          KeySchema:
+            - AttributeName: status
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: !If [IsProd, true, false]
+      SSESpecification:
+        SSEEnabled: true
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: Stage
+          Value: !Ref Stage
+
+  # Analyses Table - AI analysis results for each document
+  AnalysesTable:
+    Type: AWS::DynamoDB::Table
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      TableName: !Sub "${ProjectName}-analyses-${Stage}"
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: analysis_id
+          AttributeType: S
+        - AttributeName: doc_id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: analysis_id
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        # GSI for querying all analyses for a specific document
+        - IndexName: doc_id-index
+          KeySchema:
+            - AttributeName: doc_id
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: !If [IsProd, true, false]
+      SSESpecification:
+        SSEEnabled: true
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: Stage
+          Value: !Ref Stage
+
+  # ComplianceReports Table - Generated compliance/audit reports
+  ComplianceReportsTable:
+    Type: AWS::DynamoDB::Table
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      TableName: !Sub "${ProjectName}-compliance-reports-${Stage}"
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: report_id
+          AttributeType: S
+        - AttributeName: doc_id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: report_id
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        # GSI for querying all compliance reports for a document
+        - IndexName: doc_id-index
+          KeySchema:
+            - AttributeName: doc_id
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: !If [IsProd, true, false]
+      SSESpecification:
+        SSEEnabled: true
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: Stage
+          Value: !Ref Stage
+
+  # ---------------------------------------------------------------------------
+  # CLOUDWATCH LOG GROUPS - Structured logging with retention policies
+  # ---------------------------------------------------------------------------
+
+  # Lambda function log group - 14 day retention to control costs
+  LambdaLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${ProjectName}-api-${Stage}"
+      RetentionInDays: 14
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: Stage
+          Value: !Ref Stage
+
+  # API Gateway access log group
+  ApiAccessLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/apigateway/${ProjectName}-${Stage}"
+      RetentionInDays: 14
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: Stage
+          Value: !Ref Stage
+
+  # ---------------------------------------------------------------------------
+  # SSM PARAMETERS - Secure storage for secrets (values set manually or via CI)
+  # ---------------------------------------------------------------------------
+
+  # OpenAI API Key - SecureString for encryption at rest
+  OpenAIKeyParam:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/docsetu-ai/${Stage}/openai-api-key"
+      Description: OpenAI API key for DocSetu AI document analysis
+      Type: String
+      # Placeholder value - actual secret should be set via AWS CLI or console
+      # aws ssm put-parameter --name "/docsetu-ai/dev/openai-api-key" --value "sk-..." --type SecureString --overwrite
+      Value: "PLACEHOLDER_SET_VIA_CLI"
+      Tags:
+        Project: !Ref ProjectName
+        Stage: !Ref Stage
+
+  # JWT Secret for authentication token signing
+  JWTSecretParam:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/docsetu-ai/${Stage}/jwt-secret"
+      Description: JWT signing secret for DocSetu AI authentication
+      Type: String
+      # Placeholder value - actual secret should be set via AWS CLI or console
+      # aws ssm put-parameter --name "/docsetu-ai/dev/jwt-secret" --value "your-secret" --type SecureString --overwrite
+      Value: "PLACEHOLDER_SET_VIA_CLI"
+      Tags:
+        Project: !Ref ProjectName
+        Stage: !Ref Stage
+
+  # ---------------------------------------------------------------------------
+  # CLOUDWATCH ALARMS - Monitoring for prod deployments
+  # ---------------------------------------------------------------------------
+
+  # Lambda error alarm - triggers on deployment rollback in prod
+  DocSetuFunctionErrorAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Condition: IsProd
+    Properties:
+      AlarmName: !Sub "${ProjectName}-lambda-errors-${Stage}"
+      AlarmDescription: "Lambda function error rate exceeded threshold"
+      Namespace: AWS/Lambda
+      MetricName: Errors
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref DocSetuFunction
+      Statistic: Sum
+      Period: 60
+      EvaluationPeriods: 2
+      Threshold: 5
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+
+  # ---------------------------------------------------------------------------
+  # WAF - Web Application Firewall (Production only)
+  # ---------------------------------------------------------------------------
+  WebACL:
+    Type: AWS::WAFv2::WebACL
+    Condition: IsProd
+    Properties:
+      Name: !Sub "${ProjectName}-waf-${Stage}"
+      Description: WAF rules for DocSetu AI API protection
+      Scope: REGIONAL
+      DefaultAction:
+        Allow: {}
+      Rules:
+        # Rate limiting - prevent abuse
+        - Name: RateLimitRule
+          Priority: 1
+          Action:
+            Block: {}
+          Statement:
+            RateBasedStatement:
+              Limit: 2000
+              AggregateKeyType: IP
+          VisibilityConfig:
+            SampledRequestsEnabled: true
+            CloudWatchMetricsEnabled: true
+            MetricName: !Sub "${ProjectName}-rate-limit"
+        # AWS Managed Rules - Common Rule Set
+        - Name: AWSManagedRulesCommonRuleSet
+          Priority: 2
+          OverrideAction:
+            None: {}
+          Statement:
+            ManagedRuleGroupStatement:
+              VendorName: AWS
+              Name: AWSManagedRulesCommonRuleSet
+          VisibilityConfig:
+            SampledRequestsEnabled: true
+            CloudWatchMetricsEnabled: true
+            MetricName: !Sub "${ProjectName}-common-rules"
+      VisibilityConfig:
+        SampledRequestsEnabled: true
+        CloudWatchMetricsEnabled: true
+        MetricName: !Sub "${ProjectName}-waf"
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: Stage
+          Value: !Ref Stage
+
+# =============================================================================
+# OUTPUTS - Values exported for use by other stacks or CI/CD
+# =============================================================================
+Outputs:
+  ApiUrl:
+    Description: "DocSetu AI API Gateway endpoint URL"
+    Value: !Sub "https://${DocSetuApi}.execute-api.${AWS::Region}.amazonaws.com/${Stage}"
+    Export:
+      Name: !Sub "${ProjectName}-api-url-${Stage}"
+
+  DocumentsBucketName:
+    Description: "S3 bucket for document uploads"
+    Value: !Ref DocumentsBucket
+    Export:
+      Name: !Sub "${ProjectName}-documents-bucket-${Stage}"
+
+  DocumentsBucketArn:
+    Description: "S3 bucket ARN for document uploads"
+    Value: !GetAtt DocumentsBucket.Arn
+    Export:
+      Name: !Sub "${ProjectName}-documents-bucket-arn-${Stage}"
+
+  UsersTableName:
+    Description: "DynamoDB Users table name"
+    Value: !Ref UsersTable
+    Export:
+      Name: !Sub "${ProjectName}-users-table-${Stage}"
+
+  UsersTableArn:
+    Description: "DynamoDB Users table ARN"
+    Value: !GetAtt UsersTable.Arn
+    Export:
+      Name: !Sub "${ProjectName}-users-table-arn-${Stage}"
+
+  DocumentsTableName:
+    Description: "DynamoDB Documents table name"
+    Value: !Ref DocumentsTable
+    Export:
+      Name: !Sub "${ProjectName}-documents-table-${Stage}"
+
+  DocumentsTableArn:
+    Description: "DynamoDB Documents table ARN"
+    Value: !GetAtt DocumentsTable.Arn
+    Export:
+      Name: !Sub "${ProjectName}-documents-table-arn-${Stage}"
+
+  AnalysesTableName:
+    Description: "DynamoDB Analyses table name"
+    Value: !Ref AnalysesTable
+    Export:
+      Name: !Sub "${ProjectName}-analyses-table-${Stage}"
+
+  AnalysesTableArn:
+    Description: "DynamoDB Analyses table ARN"
+    Value: !GetAtt AnalysesTable.Arn
+    Export:
+      Name: !Sub "${ProjectName}-analyses-table-arn-${Stage}"
+
+  ComplianceReportsTableName:
+    Description: "DynamoDB ComplianceReports table name"
+    Value: !Ref ComplianceReportsTable
+    Export:
+      Name: !Sub "${ProjectName}-compliance-reports-table-${Stage}"
+
+  ComplianceReportsTableArn:
+    Description: "DynamoDB ComplianceReports table ARN"
+    Value: !GetAtt ComplianceReportsTable.Arn
+    Export:
+      Name: !Sub "${ProjectName}-compliance-reports-table-arn-${Stage}"
+
+  LambdaFunctionName:
+    Description: "Lambda function name"
+    Value: !Ref DocSetuFunction
+    Export:
+      Name: !Sub "${ProjectName}-function-name-${Stage}"
+
+  LambdaFunctionArn:
+    Description: "Lambda function ARN"
+    Value: !GetAtt DocSetuFunction.Arn
+    Export:
+      Name: !Sub "${ProjectName}-function-arn-${Stage}"
+
+  LambdaRoleArn:
+    Description: "Lambda execution role ARN"
+    Value: !GetAtt LambdaExecutionRole.Arn
+    Export:
+      Name: !Sub "${ProjectName}-lambda-role-arn-${Stage}"

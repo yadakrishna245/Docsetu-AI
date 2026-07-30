@@ -1,0 +1,230 @@
+name: Deploy DocSetu AI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  id-token: write   # Required for OIDC
+  contents: read    # Required for checkout
+
+env:
+  AWS_REGION: ap-south-1
+  SAM_CLI_TELEMETRY: 0
+  PYTHON_VERSION: "3.11"
+
+jobs:
+  # ─────────────────────────────────────────────
+  # Run tests before any deployment
+  # ─────────────────────────────────────────────
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
+
+      - name: Run linting
+        run: |
+          pip install ruff
+          ruff check .
+
+      - name: Run unit tests
+        run: |
+          pytest tests/unit/ -v --tb=short --junitxml=test-results.xml
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results
+          path: test-results.xml
+
+  # ─────────────────────────────────────────────
+  # Deploy to DEV on pull requests
+  # ─────────────────────────────────────────────
+  deploy-dev:
+    name: Deploy to Dev
+    needs: test
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    environment: dev
+    concurrency:
+      group: deploy-dev
+      cancel-in-progress: true
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+
+      - name: Set up SAM CLI
+        uses: aws-actions/setup-sam@v2
+        with:
+          use-installer: true
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          role-session-name: github-actions-docsetu-dev
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: SAM Build
+        run: sam build --use-container --parallel
+
+      - name: SAM Deploy to Dev
+        run: |
+          sam deploy \
+            --stack-name docsetu-dev \
+            --resolve-s3 \
+            --capabilities CAPABILITY_IAM CAPABILITY_AUTO_EXPAND \
+            --parameter-overrides \
+              Stage=dev \
+              LogLevel=DEBUG \
+            --no-confirm-changeset \
+            --no-fail-on-empty-changeset \
+            --tags \
+              Project=DocSetuAI \
+              Environment=dev \
+              ManagedBy=GitHubActions
+
+      - name: Get API URL
+        id: api-url
+        run: |
+          API_URL=$(aws cloudformation describe-stacks \
+            --stack-name docsetu-dev \
+            --query "Stacks[0].Outputs[?OutputKey=='ApiUrl'].OutputValue" \
+            --output text)
+          echo "api_url=$API_URL" >> $GITHUB_OUTPUT
+          echo "### 🚀 Dev Deployment Successful" >> $GITHUB_STEP_SUMMARY
+          echo "**API URL:** $API_URL" >> $GITHUB_STEP_SUMMARY
+
+      - name: Smoke test
+        run: |
+          response=$(curl -s -o /dev/null -w "%{http_code}" "${{ steps.api-url.outputs.api_url }}/health")
+          if [ "$response" != "200" ]; then
+            echo "❌ Health check failed with status $response"
+            exit 1
+          fi
+          echo "✅ Health check passed"
+
+  # ─────────────────────────────────────────────
+  # Deploy to PROD on push to main
+  # ─────────────────────────────────────────────
+  deploy-prod:
+    name: Deploy to Production
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: production
+    concurrency:
+      group: deploy-prod
+      cancel-in-progress: false
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+
+      - name: Set up SAM CLI
+        uses: aws-actions/setup-sam@v2
+        with:
+          use-installer: true
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          role-session-name: github-actions-docsetu-prod
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: SAM Build
+        run: sam build --use-container --parallel
+
+      - name: SAM Deploy to Production
+        run: |
+          sam deploy \
+            --stack-name docsetu-prod \
+            --resolve-s3 \
+            --capabilities CAPABILITY_IAM CAPABILITY_AUTO_EXPAND \
+            --parameter-overrides \
+              Stage=prod \
+              LogLevel=INFO \
+            --no-confirm-changeset \
+            --no-fail-on-empty-changeset \
+            --tags \
+              Project=DocSetuAI \
+              Environment=prod \
+              ManagedBy=GitHubActions
+
+      - name: Get API URL
+        id: api-url
+        run: |
+          API_URL=$(aws cloudformation describe-stacks \
+            --stack-name docsetu-prod \
+            --query "Stacks[0].Outputs[?OutputKey=='ApiUrl'].OutputValue" \
+            --output text)
+          echo "api_url=$API_URL" >> $GITHUB_OUTPUT
+          echo "### 🚀 Production Deployment Successful" >> $GITHUB_STEP_SUMMARY
+          echo "**API URL:** $API_URL" >> $GITHUB_STEP_SUMMARY
+
+      - name: Smoke test
+        run: |
+          response=$(curl -s -o /dev/null -w "%{http_code}" "${{ steps.api-url.outputs.api_url }}/health")
+          if [ "$response" != "200" ]; then
+            echo "❌ Health check failed with status $response"
+            exit 1
+          fi
+          echo "✅ Health check passed"
+
+      - name: Notify on failure
+        if: failure()
+        run: |
+          echo "::error::Production deployment failed! Check the logs above."
+          # Add Slack/Teams notification here if needed
+
+  # ─────────────────────────────────────────────
+  # Rollback on production failure
+  # ─────────────────────────────────────────────
+  rollback:
+    name: Rollback Production
+    needs: deploy-prod
+    if: failure() && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          role-session-name: github-actions-docsetu-rollback
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Rollback to previous deployment
+        run: |
+          echo "⚠️ Attempting rollback..."
+          aws cloudformation rollback-stack --stack-name docsetu-prod
+          echo "::warning::Production was rolled back due to deployment failure."

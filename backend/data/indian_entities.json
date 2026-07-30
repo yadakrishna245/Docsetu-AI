@@ -1,0 +1,363 @@
+{
+  "metadata": {
+    "version": "1.0.0",
+    "last_updated": "2026-07-29",
+    "description": "Indian document entity patterns for NER and validation",
+    "total_entity_types": 13
+  },
+  "entities": {
+    "PAN": {
+      "name": "Permanent Account Number",
+      "issuing_authority": "Income Tax Department, India",
+      "format": "AAAAA9999A",
+      "length": 10,
+      "regex": "^[A-Z]{3}[ABCFGHLJPT][A-Z][0-9]{4}[A-Z]$",
+      "validation_rules": {
+        "position_1_3": "Alphabetic series AAA-ZZZ",
+        "position_4": "Entity type: A=AOP, B=BOI, C=Company, F=Firm, G=Government, H=HUF, L=Local Authority, J=Artificial Juridical Person, P=Individual, T=Trust",
+        "position_5": "First letter of surname/entity name",
+        "position_6_9": "Sequential number 0001-9999",
+        "position_10": "Alphabetic check digit"
+      },
+      "entity_type_codes": {
+        "A": "Association of Persons",
+        "B": "Body of Individuals",
+        "C": "Company",
+        "F": "Firm/LLP",
+        "G": "Government",
+        "H": "Hindu Undivided Family",
+        "L": "Local Authority",
+        "J": "Artificial Juridical Person",
+        "P": "Individual/Person",
+        "T": "Trust"
+      },
+      "examples": ["ABCPD1234E", "AAACR5678M"],
+      "context_keywords": ["PAN", "permanent account number", "income tax", "pan card"]
+    },
+    "GSTIN": {
+      "name": "Goods and Services Tax Identification Number",
+      "issuing_authority": "GST Council / CBIC",
+      "format": "99AAAAA9999A9Z9",
+      "length": 15,
+      "regex": "^[0-3][0-9][A-Z]{5}[0-9]{4}[A-Z][0-9A-Z]Z[0-9A-Z]$",
+      "validation_rules": {
+        "position_1_2": "State code (01-37)",
+        "position_3_12": "PAN of the entity",
+        "position_13": "Entity number within state (1-9, A-Z)",
+        "position_14": "Z by default",
+        "position_15": "Checksum character"
+      },
+      "state_codes": {
+        "01": "Jammu & Kashmir",
+        "02": "Himachal Pradesh",
+        "03": "Punjab",
+        "04": "Chandigarh",
+        "05": "Uttarakhand",
+        "06": "Haryana",
+        "07": "Delhi",
+        "08": "Rajasthan",
+        "09": "Uttar Pradesh",
+        "10": "Bihar",
+        "11": "Sikkim",
+        "12": "Arunachal Pradesh",
+        "13": "Nagaland",
+        "14": "Manipur",
+        "15": "Mizoram",
+        "16": "Tripura",
+        "17": "Meghalaya",
+        "18": "Assam",
+        "19": "West Bengal",
+        "20": "Jharkhand",
+        "21": "Odisha",
+        "22": "Chhattisgarh",
+        "23": "Madhya Pradesh",
+        "24": "Gujarat",
+        "25": "Daman & Diu",
+        "26": "Dadra & Nagar Haveli",
+        "27": "Maharashtra",
+        "28": "Andhra Pradesh",
+        "29": "Karnataka",
+        "30": "Goa",
+        "31": "Lakshadweep",
+        "32": "Kerala",
+        "33": "Tamil Nadu",
+        "34": "Puducherry",
+        "35": "Andaman & Nicobar Islands",
+        "36": "Telangana",
+        "37": "Andhra Pradesh (New)",
+        "38": "Ladakh"
+      },
+      "examples": ["27AABCU9603R1ZM", "07AAACR5678M1Z5"],
+      "context_keywords": ["GSTIN", "GST number", "GST registration", "tax identification"]
+    },
+    "AADHAAR": {
+      "name": "Aadhaar Number",
+      "issuing_authority": "Unique Identification Authority of India (UIDAI)",
+      "format": "9999 9999 9999",
+      "length": 12,
+      "regex": "^[2-9][0-9]{3}\\s?[0-9]{4}\\s?[0-9]{4}$",
+      "validation_rules": {
+        "first_digit": "Cannot be 0 or 1",
+        "checksum": "Verhoeff algorithm on last digit",
+        "format": "12 digits, often displayed as groups of 4"
+      },
+      "verhoeff_checksum": {
+        "description": "The 12th digit is a Verhoeff checksum computed over the first 11 digits",
+        "multiplication_table": "d5 table",
+        "permutation_table": "p8 table",
+        "inverse_table": "inv table",
+        "validation": "Apply Verhoeff algorithm; result should be 0"
+      },
+      "virtual_id": {
+        "format": "16-digit number",
+        "regex": "^[0-9]{16}$",
+        "description": "Temporary 16-digit Virtual ID mapped to Aadhaar for privacy-preserving authentication"
+      },
+      "examples": ["2345 6789 0123", "9876 5432 1098"],
+      "context_keywords": ["Aadhaar", "UIDAI", "aadhaar number", "unique identification"]
+    },
+    "IFSC": {
+      "name": "Indian Financial System Code",
+      "issuing_authority": "Reserve Bank of India",
+      "format": "AAAA0999999",
+      "length": 11,
+      "regex": "^[A-Z]{4}0[A-Z0-9]{6}$",
+      "validation_rules": {
+        "position_1_4": "Bank code (alphabetic)",
+        "position_5": "Always 0 (reserved for future use)",
+        "position_6_11": "Branch code (alphanumeric)"
+      },
+      "major_bank_codes": {
+        "SBIN": "State Bank of India",
+        "HDFC": "HDFC Bank",
+        "ICIC": "ICICI Bank",
+        "UTIB": "Axis Bank",
+        "KKBK": "Kotak Mahindra Bank",
+        "PUNB": "Punjab National Bank",
+        "BARB": "Bank of Baroda",
+        "CNRB": "Canara Bank",
+        "UBIN": "Union Bank of India",
+        "IOBA": "Indian Overseas Bank",
+        "BKID": "Bank of India",
+        "IDIB": "Indian Bank",
+        "YESB": "Yes Bank",
+        "INDB": "IndusInd Bank",
+        "FDRL": "Federal Bank",
+        "CBIN": "Central Bank of India",
+        "MAHB": "Bank of Maharashtra",
+        "RATN": "RBL Bank",
+        "SIBL": "South Indian Bank",
+        "KARB": "Karnataka Bank"
+      },
+      "examples": ["SBIN0001234", "HDFC0000001", "ICIC0006789"],
+      "context_keywords": ["IFSC", "bank code", "NEFT", "RTGS", "IMPS", "branch code"]
+    },
+    "CIN": {
+      "name": "Corporate Identification Number",
+      "issuing_authority": "Ministry of Corporate Affairs (MCA)",
+      "format": "A99999AA9999AAA999999",
+      "length": 21,
+      "regex": "^[UL][0-9]{5}[A-Z]{2}[0-9]{4}[A-Z]{3}[0-9]{6}$",
+      "validation_rules": {
+        "position_1": "L=Listed, U=Unlisted",
+        "position_2_6": "Industry code (NIC code, 5 digits)",
+        "position_7_8": "State code (2 letters)",
+        "position_9_12": "Year of incorporation",
+        "position_13_15": "Ownership type: PLC=Public Ltd, PTC=Private Ltd, GOI=Govt, GAP=State Govt, NPL=Not for Profit",
+        "position_16_21": "Sequential registration number"
+      },
+      "ownership_codes": {
+        "PLC": "Public Limited Company",
+        "PTC": "Private Limited Company",
+        "GOI": "Government of India",
+        "GAP": "State Government",
+        "NPL": "Not for Profit License Company (Section 8)",
+        "FLC": "Foreign Limited Company",
+        "FTC": "Foreign Private Company"
+      },
+      "state_codes": {
+        "MH": "Maharashtra",
+        "DL": "Delhi",
+        "KA": "Karnataka",
+        "TN": "Tamil Nadu",
+        "AP": "Andhra Pradesh",
+        "TG": "Telangana",
+        "GJ": "Gujarat",
+        "WB": "West Bengal",
+        "RJ": "Rajasthan",
+        "UP": "Uttar Pradesh",
+        "HR": "Haryana",
+        "KL": "Kerala",
+        "MP": "Madhya Pradesh"
+      },
+      "examples": ["U72200MH2007PTC169323", "L21091KA1918PLC000800"],
+      "context_keywords": ["CIN", "corporate identification", "company number", "MCA registration"]
+    },
+    "DIN": {
+      "name": "Director Identification Number",
+      "issuing_authority": "Ministry of Corporate Affairs (MCA)",
+      "format": "99999999",
+      "length": 8,
+      "regex": "^[0-9]{8}$",
+      "validation_rules": {
+        "type": "8-digit numeric",
+        "uniqueness": "One per individual for lifetime",
+        "mandatory": "Required before appointment as director in any company"
+      },
+      "examples": ["00012345", "07654321"],
+      "context_keywords": ["DIN", "director identification", "director number", "DIR-3"]
+    },
+    "TAN": {
+      "name": "Tax Deduction and Collection Account Number",
+      "issuing_authority": "Income Tax Department, India",
+      "format": "AAAA99999A",
+      "length": 10,
+      "regex": "^[A-Z]{4}[0-9]{5}[A-Z]$",
+      "validation_rules": {
+        "position_1_3": "City/Area code (first 3 letters)",
+        "position_4": "First letter of deductor name",
+        "position_5_9": "Sequential number",
+        "position_10": "Alphabetic check character"
+      },
+      "examples": ["MUMR12345F", "DELH67890B"],
+      "context_keywords": ["TAN", "tax deduction", "TDS", "tax collection", "deductor"]
+    },
+    "UAN": {
+      "name": "Universal Account Number",
+      "issuing_authority": "Employees' Provident Fund Organisation (EPFO)",
+      "format": "999999999999",
+      "length": 12,
+      "regex": "^[0-9]{12}$",
+      "validation_rules": {
+        "type": "12-digit numeric",
+        "uniqueness": "One per employee for lifetime, portable across employers",
+        "linked_to": "Multiple Member IDs from different employers"
+      },
+      "examples": ["100123456789", "101987654321"],
+      "context_keywords": ["UAN", "universal account number", "EPF", "EPFO", "provident fund"]
+    },
+    "EPFO_MEMBER_ID": {
+      "name": "EPFO Member ID (PF Number)",
+      "issuing_authority": "EPFO",
+      "format": "AA/AAA/9999999/999/9999999",
+      "length_variable": true,
+      "regex": "^[A-Z]{2}\\/[A-Z]{3}\\/[0-9]{7}\\/[0-9]{3}\\/[0-9]{7}$",
+      "validation_rules": {
+        "part_1": "State code (2 letters)",
+        "part_2": "Regional office code (3 letters)",
+        "part_3": "Establishment code (7 digits)",
+        "part_4": "Extension (3 digits)",
+        "part_5": "Member serial number (7 digits)"
+      },
+      "examples": ["MH/BOM/1234567/000/0001234", "KA/BNG/9876543/001/0005678"],
+      "context_keywords": ["PF number", "member ID", "EPF number", "provident fund number", "EPFO member"]
+    },
+    "PHONE_INDIA": {
+      "name": "Indian Mobile/Phone Number",
+      "issuing_authority": "Department of Telecommunications (DoT)",
+      "format": "+91 99999 99999",
+      "length": 10,
+      "regex": "^(\\+91[\\s-]?)?[6-9][0-9]{9}$",
+      "validation_rules": {
+        "first_digit": "Must be 6, 7, 8, or 9",
+        "total_digits": 10,
+        "country_code": "+91"
+      },
+      "operator_prefixes": {
+        "6": "Recently allocated (Jio and others)",
+        "7": "Multiple operators (Jio, Airtel, Vi)",
+        "8": "Multiple operators (Airtel, BSNL, Jio)",
+        "9": "Legacy allocations (Airtel, Vi, BSNL)"
+      },
+      "landline_format": {
+        "regex": "^(0[1-9][0-9]{1,2})[\\s-]?[0-9]{6,8}$",
+        "description": "STD code (2-4 digits with leading 0) + number (6-8 digits)"
+      },
+      "examples": ["+91 98765 43210", "7890123456", "011-23456789"],
+      "context_keywords": ["mobile", "phone", "contact number", "telephone"]
+    },
+    "PIN_CODE": {
+      "name": "Indian PIN Code (Postal Index Number)",
+      "issuing_authority": "India Post",
+      "format": "999999",
+      "length": 6,
+      "regex": "^[1-9][0-9]{5}$",
+      "validation_rules": {
+        "first_digit": "Postal zone (1-9, cannot be 0)",
+        "second_digit": "Sub-zone/postal circle",
+        "third_digit": "Sorting district",
+        "last_3": "Delivery post office"
+      },
+      "zone_mapping": {
+        "1": "Delhi, Haryana, Punjab, Himachal Pradesh, J&K, Ladakh, Chandigarh",
+        "2": "Uttar Pradesh, Uttarakhand",
+        "3": "Rajasthan, Gujarat, Daman & Diu, Dadra & Nagar Haveli",
+        "4": "Maharashtra, Goa, Madhya Pradesh, Chhattisgarh",
+        "5": "Andhra Pradesh, Telangana, Karnataka",
+        "6": "Tamil Nadu, Kerala, Puducherry, Lakshadweep",
+        "7": "West Bengal, Odisha, Arunachal Pradesh, Nagaland, Manipur, Mizoram, Tripura, Meghalaya, Assam, Andaman & Nicobar, Sikkim",
+        "8": "Bihar, Jharkhand",
+        "9": "Army Post Office (APO/FPO)"
+      },
+      "examples": ["110001", "400001", "560001", "600001"],
+      "context_keywords": ["PIN", "pin code", "postal code", "zip code"]
+    },
+    "VEHICLE_REGISTRATION": {
+      "name": "Indian Vehicle Registration Number",
+      "issuing_authority": "Regional Transport Office (RTO)",
+      "format": "AA 99 AA 9999",
+      "length_variable": true,
+      "regex": "^[A-Z]{2}[\\s-]?[0-9]{1,2}[\\s-]?[A-Z]{1,3}[\\s-]?[0-9]{1,4}$",
+      "validation_rules": {
+        "part_1": "State code (2 letters)",
+        "part_2": "RTO district code (2 digits)",
+        "part_3": "Series (1-3 letters)",
+        "part_4": "Vehicle number (1-4 digits)"
+      },
+      "state_codes": {
+        "MH": "Maharashtra",
+        "DL": "Delhi",
+        "KA": "Karnataka",
+        "TN": "Tamil Nadu",
+        "AP": "Andhra Pradesh",
+        "TS": "Telangana",
+        "GJ": "Gujarat",
+        "RJ": "Rajasthan",
+        "UP": "Uttar Pradesh",
+        "WB": "West Bengal",
+        "KL": "Kerala",
+        "HR": "Haryana",
+        "PB": "Punjab",
+        "MP": "Madhya Pradesh",
+        "CG": "Chhattisgarh",
+        "GA": "Goa",
+        "HP": "Himachal Pradesh"
+      },
+      "bharat_series": {
+        "format": "BH 99 AA 9999",
+        "description": "Bharat Series for defense/central government employees, valid nationwide without re-registration"
+      },
+      "examples": ["MH 12 AB 1234", "DL 01 CA 9999", "KA 05 MX 5678"],
+      "context_keywords": ["vehicle number", "registration number", "RC", "RTO"]
+    },
+    "PASSPORT": {
+      "name": "Indian Passport Number",
+      "issuing_authority": "Ministry of External Affairs / Passport Seva",
+      "format": "A9999999",
+      "length": 8,
+      "regex": "^[A-Z][0-9]{7}$",
+      "validation_rules": {
+        "position_1": "Alphabetic prefix (type/series indicator)",
+        "position_2_8": "7-digit sequential number",
+        "common_prefixes": "H, J, K, L, M, N, P, R, S, T, U, V, W, X, Y, Z"
+      },
+      "passport_types": {
+        "P": "Ordinary Passport (dark blue cover)",
+        "S": "Official Passport (white cover)",
+        "D": "Diplomatic Passport (maroon cover)"
+      },
+      "examples": ["J8369854", "K1234567", "L9876543"],
+      "context_keywords": ["passport", "passport number", "travel document", "MEA"]
+    }
+  }
+}

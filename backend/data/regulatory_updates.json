@@ -1,0 +1,154 @@
+{
+  "metadata": {
+    "version": "1.0.0",
+    "last_updated": "2026-07-29",
+    "description": "Recent Indian regulatory updates and notifications",
+    "total_updates": 12
+  },
+  "updates": [
+    {
+      "id": "RU-001",
+      "date": "2026-07-15",
+      "regulatory_body": "CBIC (GST Council)",
+      "title": "Mandatory E-Invoice for Businesses with Turnover Above Rs.5 Crore",
+      "summary": "E-invoicing mandate extended to businesses with aggregate turnover exceeding Rs.5 crore. All B2B invoices must be reported to Invoice Registration Portal (IRP) and carry valid IRN and QR code. Non-compliant invoices will be treated as invalid for ITC purposes.",
+      "impact_areas": ["Invoice Generation", "Accounts Payable", "ERP Systems", "ITC Claims"],
+      "affected_documents": ["Tax Invoice", "Credit Note", "Debit Note"],
+      "effective_date": "2026-08-01",
+      "action_required": "Update billing systems to integrate with IRP API; validate all B2B invoices carry IRN",
+      "reference_notification": "Notification No. 10/2026-Central Tax dated 15-07-2026"
+    },
+    {
+      "id": "RU-002",
+      "date": "2026-07-01",
+      "regulatory_body": "MeitY / Data Protection Board",
+      "title": "DPDP Act Rules Notified - Consent Manager Registration Opens",
+      "summary": "Final rules under Digital Personal Data Protection Act 2023 notified. Consent Managers must register with Data Protection Board. Data Fiduciaries must implement verifiable consent mechanisms within 6 months. Penalty framework operationalized.",
+      "impact_areas": ["Data Privacy", "Consent Management", "IT Systems", "HR Data", "Customer Data"],
+      "affected_documents": ["Privacy Policy", "Consent Forms", "Data Processing Agreements", "Employee Data Forms"],
+      "effective_date": "2026-10-01",
+      "action_required": "Register as Consent Manager if applicable; implement consent collection; appoint DPO; conduct DPIA",
+      "reference_notification": "MeitY Notification S.O. 3456(E) dated 01-07-2026"
+    },
+    {
+      "id": "RU-003",
+      "date": "2026-06-20",
+      "regulatory_body": "SEBI",
+      "title": "Enhanced ESG Disclosure Requirements for Top 1000 Listed Companies",
+      "summary": "SEBI mandates BRSR Core framework reporting for top 1000 listed companies by market capitalization. Reasonable assurance required on ESG metrics. Supply chain ESG reporting mandatory for top 250 companies.",
+      "impact_areas": ["Annual Reports", "Corporate Governance", "Sustainability", "Supply Chain"],
+      "affected_documents": ["Annual Report", "BRSR Report", "Board Resolution", "Sustainability Report"],
+      "effective_date": "2026-04-01",
+      "action_required": "Implement ESG data collection; engage assurance provider; update annual report templates",
+      "reference_notification": "SEBI Circular SEBI/HO/CFD/CFD-SEC-2/P/CIR/2026/89"
+    },
+    {
+      "id": "RU-004",
+      "date": "2026-06-10",
+      "regulatory_body": "RBI",
+      "title": "Revised Digital Lending Guidelines - Enhanced Borrower Protection",
+      "summary": "RBI issues revised guidelines mandating standardized Key Fact Statement (KFS) with APR disclosure, 3-day look-up period for all digital loans, and prohibition on automatic debit without explicit consent. LSPs cannot access mobile phone contacts or media files.",
+      "impact_areas": ["Digital Lending", "Fintech Operations", "App Permissions", "Loan Documentation"],
+      "affected_documents": ["Loan Agreement", "KFS Document", "App Privacy Policy", "Terms of Service"],
+      "effective_date": "2026-09-01",
+      "action_required": "Update KFS format; implement look-up period; review app permissions; modify auto-debit flows",
+      "reference_notification": "RBI/2026-27/45 DOR.FIN.REC.No.XX/03.10.038/2026-27"
+    },
+    {
+      "id": "RU-005",
+      "date": "2026-05-28",
+      "regulatory_body": "MCA",
+      "title": "Mandatory XBRL Filing for All Companies with Turnover Above Rs.100 Crore",
+      "summary": "MCA extends mandatory XBRL financial statement filing to all companies with turnover exceeding Rs.100 crore or borrowings exceeding Rs.50 crore. Filing must use latest India Taxonomy 2026.",
+      "impact_areas": ["Financial Reporting", "Annual Filing", "Accounting Systems"],
+      "affected_documents": ["AOC-4", "Financial Statements", "Balance Sheet", "P&L Statement"],
+      "effective_date": "2026-04-01",
+      "action_required": "Implement XBRL conversion tool; map chart of accounts to India Taxonomy; test filings",
+      "reference_notification": "MCA General Circular No. 05/2026 dated 28-05-2026"
+    },
+    {
+      "id": "RU-006",
+      "date": "2026-05-15",
+      "regulatory_body": "EPFO",
+      "title": "EPF Wage Ceiling Revised to Rs.21,000 Per Month",
+      "summary": "EPFO revises wage ceiling for EPF contribution from Rs.15,000 to Rs.21,000 per month. All employees earning basic + DA up to Rs.21,000 are now mandatorily covered. Existing members above ceiling continue.",
+      "impact_areas": ["Payroll Processing", "Employee Benefits", "Employer Costs", "HR Systems"],
+      "affected_documents": ["Salary Slips", "Employment Contracts", "PF Declarations", "ECR Returns"],
+      "effective_date": "2026-09-01",
+      "action_required": "Update payroll software; recalculate employer/employee contributions; issue revised salary structures",
+      "reference_notification": "EPFO Notification GSR 456(E) dated 15-05-2026"
+    },
+    {
+      "id": "RU-007",
+      "date": "2026-05-01",
+      "regulatory_body": "CBIC (GST Council)",
+      "title": "GST Rate Rationalization - New 3-Slab Structure",
+      "summary": "GST Council approves rationalized rate structure: 5%, 12%, 18% (merging 12% and 18% for select items). Multiple items reclassified. New rate card effective from next quarter. Input tax credit mechanism simplified.",
+      "impact_areas": ["Pricing", "Invoice Generation", "ITC Calculation", "ERP Master Data"],
+      "affected_documents": ["Tax Invoice", "Price Lists", "Quotations", "Purchase Orders"],
+      "effective_date": "2026-10-01",
+      "action_required": "Update HSN-rate mapping in ERP; revise price lists; communicate to customers; train accounts team",
+      "reference_notification": "Press Release 50th GST Council Meeting, 01-05-2026"
+    },
+    {
+      "id": "RU-008",
+      "date": "2026-04-20",
+      "regulatory_body": "SEBI",
+      "title": "T+1 Settlement Extended - T+0 Optional Settlement Introduced",
+      "summary": "SEBI introduces optional T+0 (instant) settlement for equity trades alongside mandatory T+1. Brokers must offer choice to investors. Additional margins applicable for T+0 trades.",
+      "impact_areas": ["Trading Operations", "Settlement", "Margin Requirements", "Back Office"],
+      "affected_documents": ["Client Agreement", "Risk Disclosure Document", "Margin Statements"],
+      "effective_date": "2026-07-01",
+      "action_required": "Update trading systems; modify client agreements; implement T+0 margin calculations",
+      "reference_notification": "SEBI Circular SEBI/HO/MRD/TPD-1/P/CIR/2026/67"
+    },
+    {
+      "id": "RU-009",
+      "date": "2026-04-01",
+      "regulatory_body": "Income Tax Department",
+      "title": "New Tax Regime as Default - Updated TDS Rates for FY 2026-27",
+      "summary": "New tax regime with revised slabs is now default for all assessees. Employees must actively opt for old regime with employer. Updated TDS rates on salary, rent, professional fees, and contractual payments.",
+      "impact_areas": ["Payroll", "Tax Planning", "TDS Computation", "Investment Declarations"],
+      "affected_documents": ["Form 16", "Salary Slips", "Investment Declaration (Form 12BB)", "TDS Returns"],
+      "effective_date": "2026-04-01",
+      "action_required": "Update payroll for new slabs; collect employee regime choice; revise TDS computation logic",
+      "reference_notification": "Finance Act 2026, Section 115BAC (amended)"
+    },
+    {
+      "id": "RU-010",
+      "date": "2026-03-15",
+      "regulatory_body": "RBI",
+      "title": "UPI Transaction Limit Increased to Rs.5 Lakh for Select Categories",
+      "summary": "RBI enhances UPI per-transaction limit to Rs.5 lakh for tax payments, education fees, healthcare, and capital markets. Standard P2P/P2M limit remains Rs.1 lakh. Per-day limits also revised upward.",
+      "impact_areas": ["Payment Processing", "Collection Systems", "Merchant Integration"],
+      "affected_documents": ["Payment Policy", "Merchant Agreements", "Collection Mandates"],
+      "effective_date": "2026-04-01",
+      "action_required": "Update payment gateway limits; inform merchants; modify transaction validation rules",
+      "reference_notification": "RBI/2025-26/140 CO.DPSS.POLC.No.S-XX/02-14-003/2025-26"
+    },
+    {
+      "id": "RU-011",
+      "date": "2026-03-01",
+      "regulatory_body": "MCA",
+      "title": "Beneficial Ownership Reporting - Form BEN-2 Made Quarterly",
+      "summary": "MCA mandates quarterly filing of Form BEN-2 (declaration of significant beneficial ownership) for all companies. Threshold reduced to 10% holding. Non-compliance triggers freezing of shares.",
+      "impact_areas": ["Corporate Compliance", "Share Registry", "Quarterly Filing"],
+      "affected_documents": ["BEN-1 Declaration", "BEN-2 Filing", "Register of Significant Beneficial Owners"],
+      "effective_date": "2026-04-01",
+      "action_required": "Collect BEN-1 from all shareholders; file BEN-2 quarterly; update beneficial owner register",
+      "reference_notification": "MCA Notification GSR 234(E) dated 01-03-2026"
+    },
+    {
+      "id": "RU-012",
+      "date": "2026-02-15",
+      "regulatory_body": "IRDAI",
+      "title": "Mandatory Group Health Insurance for All Registered Companies",
+      "summary": "IRDAI in consultation with MCA mandates minimum group health insurance of Rs.5 lakh sum insured per employee for all companies with 50+ employees. Must include pre-existing diseases from day one.",
+      "impact_areas": ["Employee Benefits", "HR Policy", "Compliance Cost", "Insurance Procurement"],
+      "affected_documents": ["Employment Contract", "HR Policy", "Insurance Policy", "Board Resolution"],
+      "effective_date": "2026-07-01",
+      "action_required": "Procure group health policy; update HR policy; inform employees; budget additional cost",
+      "reference_notification": "IRDAI/HLT/CIR/GRP/045/02/2026"
+    }
+  ]
+}

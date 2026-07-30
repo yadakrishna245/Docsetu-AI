@@ -1,0 +1,24 @@
+{
+  "name": "docsetu-whatsapp-bot",
+  "version": "1.0.0",
+  "description": "WhatsApp bot for DocSetu AI - Document intelligence via WhatsApp",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js"
+  },
+  "keywords": ["whatsapp", "bot", "document", "ai", "docsetu"],
+  "author": "DocSetu AI",
+  "license": "MIT",
+  "dependencies": {
+    "axios": "1.7.2",
+    "dotenv": "16.4.5",
+    "express": "4.19.2",
+    "qrcode-terminal": "0.12.0",
+    "whatsapp-web.js": "1.25.0",
+    "winston": "3.13.0"
+  },
+  "devDependencies": {
+    "nodemon": "3.1.4"
+  }
+}

@@ -1,0 +1,334 @@
+{
+  "metadata": {
+    "version": "1.0.0",
+    "last_updated": "2026-07-29",
+    "description": "Document validity periods, renewal requirements, and filing deadlines for Indian compliance",
+    "total_entries": 40
+  },
+  "document_validity": [
+    {
+      "document": "PAN Card",
+      "validity": "Lifetime",
+      "expiry_type": "no_expiry",
+      "renewal_required": false,
+      "notes": "Valid for lifetime unless surrendered or cancelled by IT Department"
+    },
+    {
+      "document": "Aadhaar Card",
+      "validity": "Lifetime",
+      "expiry_type": "no_expiry",
+      "renewal_required": false,
+      "notes": "No expiry. Update demographic data every 10 years recommended"
+    },
+    {
+      "document": "Indian Passport",
+      "validity": "10 years (adults) / 5 years (minors)",
+      "expiry_type": "fixed_term",
+      "validity_years_adult": 10,
+      "validity_years_minor": 5,
+      "renewal_required": true,
+      "renewal_lead_time_months": 12,
+      "notes": "Can apply for re-issue up to 1 year before expiry. Some countries require 6-month validity for travel"
+    },
+    {
+      "document": "Driving License",
+      "validity": "20 years or until age 50, whichever is earlier (post-2019)",
+      "expiry_type": "fixed_term",
+      "validity_years": 20,
+      "max_age": 50,
+      "renewal_required": true,
+      "renewal_lead_time_months": 1,
+      "grace_period_months": 1,
+      "notes": "After age 50, renewed for 5 years at a time. Transport vehicle license: 3 years"
+    },
+    {
+      "document": "Vehicle Registration Certificate (RC)",
+      "validity": "15 years (private) / 8 years (commercial)",
+      "expiry_type": "fixed_term",
+      "validity_years_private": 15,
+      "validity_years_commercial": 8,
+      "renewal_required": true,
+      "renewal_lead_time_months": 2,
+      "notes": "Green tax applicable on renewal. Fitness certificate required for commercial vehicles annually"
+    },
+    {
+      "document": "GST Registration Certificate",
+      "validity": "Until cancelled or surrendered",
+      "expiry_type": "no_expiry",
+      "renewal_required": false,
+      "notes": "No renewal needed. Annual return filing is mandatory. Non-filing can lead to suo moto cancellation"
+    },
+    {
+      "document": "GST E-Way Bill",
+      "validity": "Distance-based (200 km per day)",
+      "expiry_type": "distance_based",
+      "validity_rules": {
+        "upto_200km": "1 day",
+        "every_additional_200km": "1 additional day",
+        "over_dimensional_cargo": "1 day per 200 km"
+      },
+      "renewal_required": false,
+      "extension_available": true,
+      "extension_window_hours": 8,
+      "notes": "Must be extended before expiry through portal. Extension available 8 hours before and 8 hours after expiry"
+    },
+    {
+      "document": "Digital Signature Certificate (DSC)",
+      "validity": "1-3 years",
+      "expiry_type": "fixed_term",
+      "validity_years_min": 1,
+      "validity_years_max": 3,
+      "renewal_required": true,
+      "renewal_lead_time_days": 30,
+      "notes": "Must be renewed before expiry. Required for MCA filings, GST, Income Tax e-filing"
+    },
+    {
+      "document": "Import Export Code (IEC)",
+      "validity": "Lifetime (with annual updation)",
+      "expiry_type": "conditional",
+      "renewal_required": false,
+      "annual_update_required": true,
+      "update_deadline": "April-June every year",
+      "notes": "IEC must be updated annually between April-June. Non-updation leads to deactivation"
+    },
+    {
+      "document": "FSSAI License",
+      "validity": "1-5 years (as chosen at application)",
+      "expiry_type": "fixed_term",
+      "validity_years_min": 1,
+      "validity_years_max": 5,
+      "renewal_required": true,
+      "renewal_lead_time_days": 30,
+      "notes": "Must apply for renewal 30 days before expiry. Late renewal attracts Rs.100/day penalty"
+    },
+    {
+      "document": "Shop & Establishment License",
+      "validity": "1-5 years (varies by state)",
+      "expiry_type": "fixed_term",
+      "renewal_required": true,
+      "notes": "Validity and renewal process varies by state. Some states offer lifetime registration"
+    },
+    {
+      "document": "Trade License (Municipal)",
+      "validity": "1 year (typically)",
+      "expiry_type": "annual",
+      "renewal_required": true,
+      "renewal_deadline": "Before 1st April or as per municipal calendar",
+      "notes": "Annual renewal with municipal corporation. Late fee applicable"
+    },
+    {
+      "document": "Fire Safety NOC",
+      "validity": "1-3 years (varies by state)",
+      "expiry_type": "fixed_term",
+      "renewal_required": true,
+      "notes": "Annual renewal common. Inspection-based. Mandatory for commercial establishments"
+    },
+    {
+      "document": "Pollution Control Board Consent",
+      "validity": "1-5 years (based on category)",
+      "expiry_type": "fixed_term",
+      "renewal_required": true,
+      "renewal_lead_time_months": 3,
+      "notes": "Consent to Operate must be renewed. Red category: shorter validity. Application 120 days before expiry"
+    },
+    {
+      "document": "Labour License (Contract Labour)",
+      "validity": "1 year",
+      "expiry_type": "annual",
+      "renewal_required": true,
+      "renewal_deadline": "30 days before expiry",
+      "notes": "Under Contract Labour (Regulation & Abolition) Act 1970. Both principal employer and contractor need license"
+    },
+    {
+      "document": "Professional Tax Registration",
+      "validity": "Lifetime",
+      "expiry_type": "no_expiry",
+      "renewal_required": false,
+      "notes": "One-time registration. Monthly/annual returns must be filed"
+    },
+    {
+      "document": "RBI License (NBFC)",
+      "validity": "Until cancelled",
+      "expiry_type": "no_expiry",
+      "renewal_required": false,
+      "notes": "No expiry but subject to continuous compliance. Annual returns mandatory. Non-compliance leads to cancellation"
+    },
+    {
+      "document": "SEBI Registration (Broker/Intermediary)",
+      "validity": "Permanent (post-2019 for brokers) / 3-5 years for others",
+      "expiry_type": "category_based",
+      "renewal_required": "depends_on_category",
+      "notes": "Stock brokers have permanent registration. Mutual fund distributors: 3 years. Research analysts: 5 years"
+    },
+    {
+      "document": "Insurance Policies (General)",
+      "validity": "1 year",
+      "expiry_type": "annual",
+      "renewal_required": true,
+      "grace_period_days": 30,
+      "notes": "Most general insurance policies are annual. Grace period varies by policy type"
+    },
+    {
+      "document": "Rental Agreement (Unregistered)",
+      "validity": "11 months (standard)",
+      "expiry_type": "fixed_term",
+      "validity_months": 11,
+      "renewal_required": true,
+      "notes": "Kept at 11 months to avoid mandatory registration. Can be renewed with fresh agreement"
+    }
+  ],
+  "filing_deadlines": {
+    "monthly": [
+      {
+        "filing": "GSTR-1 (Monthly)",
+        "deadline": "11th of following month",
+        "applicable_to": "Regular taxpayers with turnover > Rs.5 crore",
+        "penalty_late": "Rs.50/day (Rs.20 for nil), max Rs.5,000"
+      },
+      {
+        "filing": "GSTR-3B (Monthly)",
+        "deadline": "20th of following month",
+        "applicable_to": "All regular GST taxpayers",
+        "penalty_late": "Rs.50/day + 18% interest on outstanding tax"
+      },
+      {
+        "filing": "TDS Payment (Non-government)",
+        "deadline": "7th of following month",
+        "applicable_to": "All TDS deductors",
+        "penalty_late": "Interest 1.5% per month from date of deduction"
+      },
+      {
+        "filing": "EPF/ESI Contribution",
+        "deadline": "15th of following month",
+        "applicable_to": "All covered establishments",
+        "penalty_late": "Damages up to 100% of arrears"
+      },
+      {
+        "filing": "Professional Tax Payment",
+        "deadline": "Varies by state (typically end of month)",
+        "applicable_to": "Employers in applicable states",
+        "penalty_late": "Interest + penalty varies by state"
+      }
+    ],
+    "quarterly": [
+      {
+        "filing": "GSTR-1 (QRMP Quarterly)",
+        "deadline": "13th of month following quarter",
+        "applicable_to": "Taxpayers with turnover up to Rs.5 crore under QRMP",
+        "penalty_late": "Rs.50/day, max Rs.5,000"
+      },
+      {
+        "filing": "TDS Return (Form 24Q/26Q/27Q)",
+        "deadline": "31st of month following quarter (15th May for Q4)",
+        "applicable_to": "All TDS deductors",
+        "penalty_late": "Rs.200/day under Section 234E, max TDS amount"
+      },
+      {
+        "filing": "Advance Tax Installment",
+        "deadline": "15th June (15%), 15th Sep (45%), 15th Dec (75%), 15th Mar (100%)",
+        "applicable_to": "Tax liability > Rs.10,000 in a year",
+        "penalty_late": "Interest under Section 234B and 234C"
+      },
+      {
+        "filing": "SEBI Shareholding Pattern",
+        "deadline": "10 days from end of quarter",
+        "applicable_to": "All listed entities",
+        "penalty_late": "Fine Rs.5,000/day"
+      },
+      {
+        "filing": "Corporate Governance Report",
+        "deadline": "15 days from end of quarter",
+        "applicable_to": "Listed entities",
+        "penalty_late": "Fine + possible trading suspension"
+      },
+      {
+        "filing": "GST ITC-04 (Job Work)",
+        "deadline": "25th of month following half-year/quarter",
+        "applicable_to": "Manufacturers sending goods for job work",
+        "penalty_late": "Late fee applicable"
+      }
+    ],
+    "annual": [
+      {
+        "filing": "Income Tax Return (Non-audit)",
+        "deadline": "31st July",
+        "applicable_to": "Individuals, HUFs, entities not requiring audit",
+        "penalty_late": "Rs.5,000 if filed by 31st Dec; Rs.10,000 after (Rs.1,000 if income < Rs.5 lakh)"
+      },
+      {
+        "filing": "Income Tax Return (Audit cases)",
+        "deadline": "31st October",
+        "applicable_to": "Companies, firms and persons requiring audit",
+        "penalty_late": "Rs.5,000/Rs.10,000 + interest under 234A"
+      },
+      {
+        "filing": "Income Tax Return (Transfer Pricing)",
+        "deadline": "30th November",
+        "applicable_to": "Entities with international/specified domestic transactions",
+        "penalty_late": "Rs.5,000/Rs.10,000 + interest"
+      },
+      {
+        "filing": "GST Annual Return (GSTR-9)",
+        "deadline": "31st December",
+        "applicable_to": "All regular GST taxpayers",
+        "penalty_late": "Rs.200/day (CGST+SGST), max 0.5% of turnover"
+      },
+      {
+        "filing": "Company Annual Return (MGT-7)",
+        "deadline": "60 days from AGM (AGM by 30th Sep)",
+        "applicable_to": "All companies",
+        "penalty_late": "Rs.100/day additional fee + penalty"
+      },
+      {
+        "filing": "Financial Statement Filing (AOC-4)",
+        "deadline": "30 days from AGM",
+        "applicable_to": "All companies",
+        "penalty_late": "Rs.100/day additional fee + penalty"
+      },
+      {
+        "filing": "DIR-3 KYC (Director KYC)",
+        "deadline": "30th September every year",
+        "applicable_to": "All directors holding DIN",
+        "penalty_late": "Rs.5,000 fee for late filing; DIN deactivation"
+      },
+      {
+        "filing": "LLP Annual Return (Form 11)",
+        "deadline": "30th May",
+        "applicable_to": "All LLPs",
+        "penalty_late": "Rs.100/day"
+      },
+      {
+        "filing": "LLP Statement of Accounts (Form 8)",
+        "deadline": "30th October",
+        "applicable_to": "All LLPs",
+        "penalty_late": "Rs.100/day"
+      },
+      {
+        "filing": "Tax Audit Report (Form 3CA/3CB)",
+        "deadline": "30th September (one month before ITR due date)",
+        "applicable_to": "Entities with turnover > Rs.1 crore (business) or Rs.50 lakh (profession)",
+        "penalty_late": "Penalty 0.5% of turnover, max Rs.1.5 lakh under Section 271B"
+      },
+      {
+        "filing": "Transfer Pricing Report (Form 3CEB)",
+        "deadline": "31st October",
+        "applicable_to": "Entities with international/specified domestic transactions",
+        "penalty_late": "Rs.1 lakh penalty under Section 271BA"
+      },
+      {
+        "filing": "CSR Report (CSR-2)",
+        "deadline": "Along with AOC-4 (30 days from AGM)",
+        "applicable_to": "Companies covered under Section 135",
+        "penalty_late": "Same as AOC-4 late filing"
+      }
+    ]
+  },
+  "compliance_calendar_highlights": {
+    "april": ["FY begins", "Advance Tax Q1 (15th June)", "LLP Form 11 (30th May)"],
+    "july": ["ITR non-audit (31st)", "GSTR-9 reconciliation"],
+    "september": ["AGM deadline (30th)", "DIR-3 KYC (30th)", "Tax Audit (30th)"],
+    "october": ["ITR audit cases (31st)", "TP Report 3CEB (31st)", "LLP Form 8 (30th)"],
+    "november": ["ITR TP cases (30th)", "ITC claim deadline (30th)", "Credit note deadline (30th)"],
+    "december": ["GSTR-9 Annual Return (31st)", "Half-year financial results for listed cos"]
+  }
+}
