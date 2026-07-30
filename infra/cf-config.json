@@ -1,0 +1,39 @@
+{
+  "CallerReference": "docsetu-frontend-20260730",
+  "Comment": "DocSetu AI Frontend",
+  "DefaultCacheBehavior": {
+    "TargetOriginId": "S3-docsetu",
+    "ViewerProtocolPolicy": "redirect-to-https",
+    "AllowedMethods": {
+      "Quantity": 2,
+      "Items": ["GET", "HEAD"],
+      "CachedMethods": {"Quantity": 2, "Items": ["GET", "HEAD"]}
+    },
+    "ForwardedValues": {"QueryString": false, "Cookies": {"Forward": "none"}},
+    "MinTTL": 0,
+    "DefaultTTL": 86400,
+    "MaxTTL": 31536000,
+    "Compress": true
+  },
+  "Origins": {
+    "Quantity": 1,
+    "Items": [{
+      "Id": "S3-docsetu",
+      "DomainName": "docsetu-ai-frontend-dev.s3.ap-south-1.amazonaws.com",
+      "OriginAccessControlId": "E1AJTEU2MMYR98",
+      "S3OriginConfig": {"OriginAccessIdentity": ""}
+    }]
+  },
+  "Enabled": true,
+  "DefaultRootObject": "index.html",
+  "CustomErrorResponses": {
+    "Quantity": 1,
+    "Items": [{
+      "ErrorCode": 403,
+      "ResponsePagePath": "/index.html",
+      "ResponseCode": "200",
+      "ErrorCachingMinTTL": 10
+    }]
+  },
+  "PriceClass": "PriceClass_200"
+}

@@ -35,6 +35,49 @@ class LLMService:
             logger.warning("OpenAI API key not configured")
         elif self.provider == "gemini" and not settings.gemini_api_key:
             logger.warning("Gemini API key not configured")
+        elif self.provider == "kimi" and not settings.kimi_api_key:
+            logger.warning("Kimi API key not configured")
+
+    async def _call_kimi(self, messages: List[Dict[str, str]], temperature: float = 0.1) -> Dict[str, Any]:
+        """
+        Call Kimi K3 API (OpenAI-compatible format).
+
+        Kimi K3: 2.8T params, 1M context, $3/M input, $0.30/M cached input, $15/M output.
+        API docs: https://platform.moonshot.ai
+
+        Args:
+            messages: List of message dicts with 'role' and 'content'.
+            temperature: Sampling temperature.
+
+        Returns:
+            API response with content and metadata.
+        """
+        headers = {
+            "Authorization": f"Bearer {settings.kimi_api_key}",
+            "Content-Type": "application/json",
+        }
+
+        payload = {
+            "model": settings.kimi_model,
+            "messages": messages,
+            "temperature": temperature,
+            "max_tokens": 4000,
+        }
+
+        async with httpx.AsyncClient(timeout=120.0) as client:
+            response = await client.post(
+                "https://api.moonshot.ai/v1/chat/completions",
+                headers=headers,
+                json=payload,
+            )
+            response.raise_for_status()
+            data = response.json()
+
+        return {
+            "content": data["choices"][0]["message"]["content"],
+            "tokens_used": data.get("usage", {}).get("total_tokens", 0),
+            "model": data.get("model", settings.kimi_model),
+        }
 
     async def _call_openai(self, messages: List[Dict[str, str]], temperature: float = 0.1) -> Dict[str, Any]:
         """
@@ -134,6 +177,12 @@ class LLMService:
                     {"role": "user", "content": user_prompt},
                 ]
                 result = await self._call_openai(messages, temperature)
+            elif self.provider == "kimi":
+                messages = [
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt},
+                ]
+                result = await self._call_kimi(messages, temperature)
             elif self.provider == "gemini":
                 combined_prompt = f"{system_prompt}\n\n---\n\n{user_prompt}"
                 result = await self._call_gemini(combined_prompt, temperature)

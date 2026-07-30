@@ -37,7 +37,11 @@ class Settings(BaseSettings):
     gemini_model: str = "gemini-pro"
 
     # LLM Provider
-    llm_provider: str = "openai"
+    llm_provider: str = "kimi"  # openai, gemini, or kimi
+
+    # Kimi K3 (Moonshot AI) - Recommended: cheapest with 1M context
+    kimi_api_key: str = ""
+    kimi_model: str = "kimi-k3"
 
     # JWT Authentication
     jwt_secret_key: str = "change-this-jwt-secret"
