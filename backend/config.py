@@ -37,7 +37,11 @@ class Settings(BaseSettings):
     gemini_model: str = "gemini-pro"
 
     # LLM Provider
-    llm_provider: str = "kimi"  # openai, gemini, or kimi
+    llm_provider: str = "deepseek"  # deepseek (cheapest), kimi, openai, or gemini
+
+    # DeepSeek V4 (Best price/performance) - $0.14/$0.28 per 1M tokens
+    deepseek_api_key: str = ""
+    deepseek_model: str = "deepseek-chat"  # deepseek-chat (V4 Flash) or deepseek-reasoner (V4 Pro)
 
     # Kimi K3 (Moonshot AI) - Recommended: cheapest with 1M context
     kimi_api_key: str = ""

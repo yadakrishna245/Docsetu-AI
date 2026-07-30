@@ -37,6 +37,49 @@ class LLMService:
             logger.warning("Gemini API key not configured")
         elif self.provider == "kimi" and not settings.kimi_api_key:
             logger.warning("Kimi API key not configured")
+        elif self.provider == "deepseek" and not settings.deepseek_api_key:
+            logger.warning("DeepSeek API key not configured")
+
+    async def _call_deepseek(self, messages: List[Dict[str, str]], temperature: float = 0.1) -> Dict[str, Any]:
+        """
+        Call DeepSeek V4 API (OpenAI-compatible format).
+
+        DeepSeek V4 Flash: $0.14/M input, $0.28/M output, $0.0028/M cached.
+        107x cheaper than GPT-4. Best for extraction, summarization, structured tasks.
+
+        Args:
+            messages: List of message dicts with 'role' and 'content'.
+            temperature: Sampling temperature.
+
+        Returns:
+            API response with content and metadata.
+        """
+        headers = {
+            "Authorization": f"Bearer {settings.deepseek_api_key}",
+            "Content-Type": "application/json",
+        }
+
+        payload = {
+            "model": settings.deepseek_model,
+            "messages": messages,
+            "temperature": temperature,
+            "max_tokens": 4000,
+        }
+
+        async with httpx.AsyncClient(timeout=120.0) as client:
+            response = await client.post(
+                "https://api.deepseek.com/chat/completions",
+                headers=headers,
+                json=payload,
+            )
+            response.raise_for_status()
+            data = response.json()
+
+        return {
+            "content": data["choices"][0]["message"]["content"],
+            "tokens_used": data.get("usage", {}).get("total_tokens", 0),
+            "model": data.get("model", settings.deepseek_model),
+        }
 
     async def _call_kimi(self, messages: List[Dict[str, str]], temperature: float = 0.1) -> Dict[str, Any]:
         """
@@ -177,6 +220,12 @@ class LLMService:
                     {"role": "user", "content": user_prompt},
                 ]
                 result = await self._call_openai(messages, temperature)
+            elif self.provider == "deepseek":
+                messages = [
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt},
+                ]
+                result = await self._call_deepseek(messages, temperature)
             elif self.provider == "kimi":
                 messages = [
                     {"role": "system", "content": system_prompt},
