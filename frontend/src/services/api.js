@@ -52,7 +52,7 @@ export const authAPI = {
 
 // Document APIs
 export const documentAPI = {
-  getAll: (params) => api.get('/documents', { params }),
+  getAll: (params) => api.get('/documents/', { params }),
   getById: (id) => api.get(`/documents/${id}`),
   upload: (formData, onProgress) =>
     api.post('/documents/upload', formData, {
