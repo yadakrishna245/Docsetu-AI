@@ -34,14 +34,18 @@ export function AuthProvider({ children }) {
   const login = async (email, password) => {
     try {
       const response = await authAPI.login({ email, password });
-      const { token, user: userData } = response.data;
-      localStorage.setItem('docsetu_token', token);
+      const { access_token } = response.data;
+      localStorage.setItem('docsetu_token', access_token);
+      
+      // Fetch user profile after login
+      const profileRes = await authAPI.getProfile();
+      const userData = profileRes.data;
       localStorage.setItem('docsetu_user', JSON.stringify(userData));
       setUser(userData);
       toast.success('Welcome back!');
       return { success: true };
     } catch (error) {
-      const message = error.response?.data?.message || 'Login failed';
+      const message = error.response?.data?.detail || error.response?.data?.message || 'Login failed';
       toast.error(message);
       return { success: false, message };
     }
@@ -49,15 +53,20 @@ export function AuthProvider({ children }) {
 
   const register = async (name, email, password, organization) => {
     try {
-      const response = await authAPI.register({ name, email, password, organization });
-      const { token, user: userData } = response.data;
-      localStorage.setItem('docsetu_token', token);
+      await authAPI.register({ full_name: name, email, password, username: email.split('@')[0], organization });
+      // Auto-login after register
+      const loginRes = await authAPI.login({ email, password });
+      const { access_token } = loginRes.data;
+      localStorage.setItem('docsetu_token', access_token);
+      
+      const profileRes = await authAPI.getProfile();
+      const userData = profileRes.data;
       localStorage.setItem('docsetu_user', JSON.stringify(userData));
       setUser(userData);
       toast.success('Account created successfully!');
       return { success: true };
     } catch (error) {
-      const message = error.response?.data?.message || 'Registration failed';
+      const message = error.response?.data?.detail || error.response?.data?.message || 'Registration failed';
       toast.error(message);
       return { success: false, message };
     }
