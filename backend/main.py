@@ -76,6 +76,10 @@ app = FastAPI(
     openapi_url="/openapi.json",
 )
 
+# Rate Limiting
+from routers.rate_limit import setup_rate_limiting
+setup_rate_limiting(app)
+
 # CORS Middleware
 app.add_middleware(
     CORSMiddleware,

@@ -1,0 +1,13 @@
+[tool.ruff]
+target-version = "py311"
+line-length = 120
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "UP", "S", "B", "A", "COM", "C4", "ICN", "PIE", "T20", "RET", "SIM", "ERA"]
+ignore = ["S101", "S105", "S106", "COM812", "ERA001"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S101", "S106"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["config", "db", "models", "routers", "services", "utils"]
