@@ -3,6 +3,7 @@ DocSetu AI - Database Connection Setup
 Supports SQLite for development and PostgreSQL for production.
 """
 
+import os
 import logging
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
@@ -11,6 +12,12 @@ from config import get_settings
 logger = logging.getLogger(__name__)
 
 settings = get_settings()
+
+# Ensure parent directory exists for SQLite (needed in Lambda /tmp)
+if settings.database_url.startswith("sqlite"):
+    db_path = settings.database_url.replace("sqlite:///", "").replace("sqlite://", "")
+    if db_path:
+        os.makedirs(os.path.dirname(db_path) if os.path.dirname(db_path) else ".", exist_ok=True)
 
 # Engine configuration based on database type
 if settings.database_url.startswith("sqlite"):

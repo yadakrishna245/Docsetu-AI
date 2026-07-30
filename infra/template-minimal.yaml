@@ -1,0 +1,44 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: DocSetu AI - Minimal deployment (Lambda + API Gateway)
+
+Globals:
+  Function:
+    Runtime: python3.11
+    MemorySize: 512
+    Timeout: 30
+
+Resources:
+  DocSetuFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: docsetu-ai-api-dev
+      Handler: lambda_handler.handler
+      CodeUri: ../backend/
+      Environment:
+        Variables:
+          STAGE: dev
+          DATABASE_URL: "sqlite:////tmp/docsetu.db"
+          LOG_LEVEL: DEBUG
+          JWT_SECRET_KEY: "docsetu-dev-jwt-secret-change-me"
+          APP_ENV: production
+          UPLOAD_DIR: /tmp/uploads
+          CHROMA_PERSIST_DIR: /tmp/chroma_db
+          LOG_FILE: /tmp/logs/docsetu.log
+          CORS_ORIGINS: "*"
+      Events:
+        ApiProxy:
+          Type: HttpApi
+          Properties:
+            Path: /{proxy+}
+            Method: ANY
+        ApiRoot:
+          Type: HttpApi
+          Properties:
+            Path: /
+            Method: ANY
+
+Outputs:
+  ApiUrl:
+    Description: API Gateway endpoint URL
+    Value: !Sub "https://${ServerlessHttpApi}.execute-api.${AWS::Region}.amazonaws.com"

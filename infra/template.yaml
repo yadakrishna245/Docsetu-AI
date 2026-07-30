@@ -112,10 +112,8 @@ Resources:
       FunctionName: !Sub "${ProjectName}-api-${Stage}"
       Description: !Sub "DocSetu AI FastAPI backend - ${Stage}"
       Handler: app.handler.handler
-      CodeUri: ../src/
-      # Lambda Layer for Python dependencies (requests, openai, fastapi, etc.)
-      Layers:
-        - !Ref DependenciesLayer
+      CodeUri: ../backend/
+      # Dependencies are bundled with the function code
       # AutoPublishAlias enables safe deployments with traffic shifting
       AutoPublishAlias: live
       # Provisioned concurrency for prod to eliminate cold starts
@@ -126,12 +124,7 @@ Resources:
           - !Ref AWS::NoValue
       # Deployment preference for gradual rollouts in prod
       DeploymentPreference:
-        !If
-          - IsProd
-          - Type: Linear10PercentEvery1Minute
-            Alarms:
-              - !Ref DocSetuFunctionErrorAlarm
-          - !Ref AWS::NoValue
+        Type: AllAtOnce
       Role: !GetAtt LambdaExecutionRole.Arn
       Events:
         # Catch-all route - FastAPI handles routing internally
@@ -154,21 +147,7 @@ Resources:
         ManagedBy: SAM
 
   # ---------------------------------------------------------------------------
-  # LAMBDA LAYER - Python dependencies packaged separately for faster deploys
-  # ---------------------------------------------------------------------------
-  DependenciesLayer:
-    Type: AWS::Serverless::LayerVersion
-    Properties:
-      LayerName: !Sub "${ProjectName}-dependencies-${Stage}"
-      Description: Python dependencies for DocSetu AI (fastapi, mangum, openai, etc.)
-      ContentUri: ../layers/dependencies/
-      CompatibleRuntimes:
-        - python3.11
-      CompatibleArchitectures:
-        - x86_64
-      RetentionPolicy: Retain
-    Metadata:
-      BuildMethod: python3.11
+  # Dependencies are bundled directly with the Lambda function code
 
   # ---------------------------------------------------------------------------
   # IAM ROLE - Least-privilege permissions for Lambda execution
@@ -499,33 +478,9 @@ Resources:
   # SSM PARAMETERS - Secure storage for secrets (values set manually or via CI)
   # ---------------------------------------------------------------------------
 
-  # OpenAI API Key - SecureString for encryption at rest
-  OpenAIKeyParam:
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Sub "/docsetu-ai/${Stage}/openai-api-key"
-      Description: OpenAI API key for DocSetu AI document analysis
-      Type: String
-      # Placeholder value - actual secret should be set via AWS CLI or console
-      # aws ssm put-parameter --name "/docsetu-ai/dev/openai-api-key" --value "sk-..." --type SecureString --overwrite
-      Value: "PLACEHOLDER_SET_VIA_CLI"
-      Tags:
-        Project: !Ref ProjectName
-        Stage: !Ref Stage
-
-  # JWT Secret for authentication token signing
-  JWTSecretParam:
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Sub "/docsetu-ai/${Stage}/jwt-secret"
-      Description: JWT signing secret for DocSetu AI authentication
-      Type: String
-      # Placeholder value - actual secret should be set via AWS CLI or console
-      # aws ssm put-parameter --name "/docsetu-ai/dev/jwt-secret" --value "your-secret" --type SecureString --overwrite
-      Value: "PLACEHOLDER_SET_VIA_CLI"
-      Tags:
-        Project: !Ref ProjectName
-        Stage: !Ref Stage
+  # SSM Parameters should be created via AWS CLI before deployment:
+  # aws ssm put-parameter --name "/docsetu-ai/dev/openai-api-key" --value "sk-..." --type SecureString
+  # aws ssm put-parameter --name "/docsetu-ai/dev/jwt-secret" --value "your-secret" --type SecureString
 
   # ---------------------------------------------------------------------------
   # CLOUDWATCH ALARMS - Monitoring for prod deployments

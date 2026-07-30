@@ -39,6 +39,10 @@ def is_lambda_environment() -> bool:
 # Import the FastAPI app
 from main import app  # noqa: E402
 
+# Initialize database tables (lifespan is off in Lambda)
+from db import init_db  # noqa: E402
+init_db()
+
 # Configure Mangum handler for API Gateway HTTP API v2
 from mangum import Mangum  # noqa: E402
 
