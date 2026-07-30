@@ -24,17 +24,14 @@ class TestDocumentUpload:
             "confidence": 0.95,
         }
 
-        with patch("routers.documents.OCRService") as mock_ocr_class:
-            mock_ocr_instance = mock_ocr_class.return_value
-            mock_ocr_instance.extract_text = AsyncMock(return_value=mock_ocr_result)
-
+        with patch("services.background_tasks.process_document_ocr"):
             response = await test_client.post(
                 "/api/documents/upload",
                 files={"file": ("invoice.pdf", MINIMAL_PDF_BYTES, "application/pdf")},
                 headers=test_user["headers"],
             )
 
-        assert response.status_code == 201
+        assert response.status_code in (201, 202)
         data = response.json()
         assert "id" in data
         assert data["filename"] == "invoice.pdf"

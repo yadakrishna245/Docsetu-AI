@@ -133,27 +133,15 @@ async def test_user(test_client: AsyncClient):
 @pytest_asyncio.fixture
 async def test_document(test_client: AsyncClient, test_user: dict):
     """Upload a dummy PDF document and return its info."""
-    # Mock the OCR service to avoid external dependencies
-    mock_ocr_result = {
-        "text": "This is a test document with GST number 27AAPFU0939F1ZV and PAN AAPFU0939F.",
-        "language_detected": "en",
-        "page_count": 1,
-        "method": "test",
-        "is_scanned": False,
-        "confidence": 0.99,
-    }
-
-    with patch("routers.documents.OCRService") as mock_ocr_class:
-        mock_ocr_instance = mock_ocr_class.return_value
-        mock_ocr_instance.extract_text = AsyncMock(return_value=mock_ocr_result)
-
+    # Upload returns 202 (async processing) - no need to mock OCR since it runs in background
+    with patch("services.background_tasks.process_document_ocr"):
         response = await test_client.post(
             "/api/documents/upload",
             files={"file": ("test_document.pdf", MINIMAL_PDF_BYTES, "application/pdf")},
             headers=test_user["headers"],
         )
 
-    assert response.status_code == 201, f"Document upload failed: {response.text}"
+    assert response.status_code in (201, 202), f"Document upload failed: {response.text}"
     doc_data = response.json()
 
     return {
