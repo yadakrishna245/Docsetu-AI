@@ -50,7 +50,7 @@ def init_db():
     Initialize database tables.
     Creates all tables defined in models.
     """
-    from models.database import User, Document, Analysis, ComplianceReport, Subscription, Payment  # noqa: F401
+    from models.database import User, Document, Analysis, ComplianceReport, Subscription, Payment, AuditLog  # noqa: F401
     Base.metadata.create_all(bind=engine)
     logger.info("Database tables created successfully.")
 

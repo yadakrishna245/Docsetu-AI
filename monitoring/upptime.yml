@@ -1,0 +1,30 @@
+owner: yadakrishna245
+repo: Docsetu-AI-status
+
+sites:
+  - name: DocSetu API
+    url: $API_URL/health
+    method: GET
+    expectedStatusCodes:
+      - 200
+  - name: DocSetu Frontend
+    url: $FRONTEND_URL
+    method: GET
+    expectedStatusCodes:
+      - 200
+
+assignees:
+  - yadakrishna245
+
+status-website:
+  cname: status.docsetu.ai
+  name: DocSetu AI Status
+  theme: dark
+
+i18n:
+  activeIncidents: Active Incidents
+  pastIncidents: Past Incidents
+  allSystemsOperational: All Systems Operational
+  
+workflowSchedule:
+  - cron: "*/5 * * * *"

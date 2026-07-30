@@ -54,3 +54,7 @@ razorpay==1.4.1
 
 # Rate Limiting
 slowapi==0.1.9
+
+# MFA (TOTP)
+pyotp==2.9.0
+qrcode[pil]==7.4.2

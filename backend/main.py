@@ -89,6 +89,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Security Headers Middleware (OWASP recommended)
+from middleware.security import SecurityHeadersMiddleware
+app.add_middleware(SecurityHeadersMiddleware)
+
 
 # Request timing middleware
 @app.middleware("http")
