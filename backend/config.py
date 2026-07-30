@@ -25,6 +25,11 @@ class Settings(BaseSettings):
     # Database
     database_url: str = "sqlite:///./docsetu.db"
 
+    # DynamoDB (Lambda deployment)
+    aws_region: str = "ap-south-1"
+    dynamodb_users_table: str = "docsetu-users"
+    dynamodb_documents_table: str = "docsetu-documents"
+
     # Redis
     redis_url: str = "redis://localhost:6379/0"
 

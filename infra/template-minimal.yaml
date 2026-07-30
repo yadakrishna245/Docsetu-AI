@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
-Description: DocSetu AI - Minimal deployment (Lambda + API Gateway)
+Description: DocSetu AI - Lambda + DynamoDB (persistent data)
 
 Globals:
   Function:
@@ -18,14 +18,24 @@ Resources:
       Environment:
         Variables:
           STAGE: dev
+          USE_DYNAMODB: "true"
+          AWS_REGION_NAME: ap-south-1
+          DYNAMODB_USERS_TABLE: docsetu-users
+          DYNAMODB_DOCUMENTS_TABLE: docsetu-documents
           DATABASE_URL: "sqlite:////tmp/docsetu.db"
-          LOG_LEVEL: DEBUG
-          JWT_SECRET_KEY: "docsetu-dev-jwt-secret-change-me"
+          LOG_LEVEL: INFO
+          JWT_SECRET_KEY: "docsetu-prod-jwt-secret-x7k9m2p4"
           APP_ENV: production
           UPLOAD_DIR: /tmp/uploads
           CHROMA_PERSIST_DIR: /tmp/chroma_db
           LOG_FILE: /tmp/logs/docsetu.log
           CORS_ORIGINS: "*"
+          LLM_PROVIDER: gemini
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: docsetu-users
+        - DynamoDBCrudPolicy:
+            TableName: docsetu-documents
       Events:
         ApiProxy:
           Type: HttpApi
